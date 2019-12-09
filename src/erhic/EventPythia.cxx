@@ -9,6 +9,7 @@
 
 #include "eicsmear/erhic/EventPythia.h"
 
+#include <iostream>
 #include <cmath>
 #include <limits>
 #include <sstream>
@@ -92,6 +93,8 @@ const ParticleMC* EventPythia::ScatteredLepton() const {
     }  // if
   }  // for
   // No luck, couldn't find the scattered lepton.
+  //std::cerr << "No lepton for kinematic calculations" << std::endl;
+  std::cerr << "Alex says we couldn't find the scattered lepton, commander..." << std::endl;
   return NULL;
 }
 
