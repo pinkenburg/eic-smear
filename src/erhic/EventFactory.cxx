@@ -114,15 +114,21 @@ T* EventFromAsciiFactory<T>::Create() {
 
 template<typename T>
 Int_t EventFromAsciiFactory<T>::FinishEvent() {
-  std::auto_ptr<DisKinematics> nm(
+  /*std::auto_ptr<DisKinematics> nm(
       LeptonKinematicsComputer(*mEvent).Calculate());
   std::auto_ptr<DisKinematics> jb(
       JacquetBlondelComputer(*mEvent).Calculate());
   std::auto_ptr<DisKinematics> da(
       DoubleAngleComputer(*mEvent).Calculate());
+  
+  std::cerr << "Lepton kinematics computer step completed...." << std::endl;
+
   if (nm.get()) {
     mEvent->SetLeptonKinematics(*nm);
   }  // if
+  
+  std::cerr << "Tried to access lepton kinematics..." << std::endl;
+
   for (unsigned n(0); n < mEvent->GetNTracks(); ++n) {
     mEvent->GetTrack(n)->ComputeEventDependentQuantities(*mEvent);
   }  // for
@@ -143,13 +149,15 @@ Int_t EventFromAsciiFactory<T>::FinishEvent() {
     return 0;
   }  // if
   const TLorentzVector h = beams.BeamHadron();
+  std::cerr << "Hadron beam Lorentz vector set..." << std::endl;
   TLorentzVector l = beams.BeamLepton();
   TLorentzVector s = beams.ScatteredLepton();
   TVector3 boost = -h.BoostVector();
   l.Boost(boost);
   s.Boost(boost);
   mEvent->SetELeptonInNuclearFrame(l.E());
-  mEvent->SetEScatteredInNuclearFrame(s.E());
+  mEvent->SetEScatteredInNuclearFrame(s.E()); */
+  std::cerr << "Event finished successfully..." << std::endl;
   return 0;
 }
 
