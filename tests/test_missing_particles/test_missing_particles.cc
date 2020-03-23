@@ -6,9 +6,18 @@
 #include <TLegend.h>
 #include <TStyle.h>
 
-#include "BeASTDetector.h"
+// #include "BeASTDetector.h"
 #include "ePHENIXDetector.h"
-#include "ZeusDetector.h"
+// #include "ZeusDetector.h"
+
+Smear::Detector BuildBeAST();
+Smear::Detector BuildJLEIC();
+Smear::Detector BuildZeus();
+
+using std::cout;
+using std::cerr;
+using std::endl;
+
 
 const double deg_to_rad = 0.01745329251; // pi/180
 
@@ -20,6 +29,7 @@ enum EicSmearResults {
     smear_e_zero_p,
     smear_e_smear_p,
     zero_e_zero_p,
+    // smear_pt
 };
 
 struct EicSmearStep {
@@ -35,6 +45,7 @@ struct EicSmearStatistics {
     long int smear_e_zero_p;
     long int smear_e_smear_p;
     long int zero_e_zero_p;
+  // long int smear_pt;
 
     std::vector<EicSmearStep> steps;
 
@@ -43,6 +54,7 @@ struct EicSmearStatistics {
     TH1D* smear_e_zero_p_eta;
     TH1D* zero_e_zero_p_eta;
     TH1D* smear_e_smear_p_eta;
+  // TH1D* smear_pt_eta;
 };
 
 /// This function does smearing itself. by calling detector.Smear(not_smeared_prt);
@@ -62,6 +74,7 @@ EicSmearStep DoSmearStep(int pdg, TLorentzVector& input_vect, Smear::Detector& d
     // Smear the particle
     Smear::ParticleMCS * smeared_prt;
     smeared_prt = detector.Smear(not_smeared_prt);
+    // if ( smeared_prt && smeared_prt->GetPt() > 0 ) cout << smeared_prt->GetPt() << endl;
 
     if(!smeared_prt) {
         step.result = null_particle;
@@ -73,14 +86,23 @@ EicSmearStep DoSmearStep(int pdg, TLorentzVector& input_vect, Smear::Detector& d
     double sm_p = smeared_prt->GetP();
     double in_e = input_vect.E();
     double sm_e = smeared_prt->GetE();
+    double in_pt = input_vect.Pt();
+    double sm_pt = smeared_prt->GetPt();
 
     // Eic smear return non zero p
     bool zero_p = TMath::Abs(in_p)>0.001 && TMath::Abs(sm_p)<0.00001;
     bool zero_e = TMath::Abs(in_e)>0.001 && TMath::Abs(sm_e)<0.00001;
+    bool zero_pt = TMath::Abs(in_pt)>0.001 && TMath::Abs(sm_pt)<0.00001;
+    // if ( sm_pt > 0 ) cout << in_pt << "  " << sm_pt << endl;
+    // if ( !zero_pt ) cout << sm_pt << endl;
 
-    if(zero_p && zero_e) {
+    
+    if(zero_p && zero_e && zero_pt) {
         step.result = zero_e_zero_p;   // we don't take such particle
     }
+    // else if (!zero_pt) {
+    //   step.result = smear_pt;  // pt is smeared - this is done independently of other variables!
+    // }
     else if (zero_p) {
         step.result = smear_e_zero_p;  // we don't take such particle
     }
@@ -119,16 +141,18 @@ EicSmearStatistics Process(int pdg, Smear::Detector& detector) {
     stat.smear_e_zero_p=0;
     stat.smear_e_smear_p=0;
     stat.zero_e_zero_p=0;
+    // stat.smear_pt=0;
 
     stat.null_particles_eta  = new TH1D("null_particles_eta",  "Unsmeared particles;#eta;counts", 200, -5, 5 );
     stat.zero_e_smear_p_eta  = new TH1D("zero_e_smear_p_eta",  "only p smeared;#eta;counts", 100, -5, 5 );
     stat.smear_e_zero_p_eta  = new TH1D("smear_e_zero_p_eta",  "only e smeared;#eta;counts", 100, -5, 5 );
     stat.zero_e_zero_p_eta   = new TH1D("zero_e_zero_p_eta",   "Unsmeared particles;#eta;counts", 100, -5, 5 );
     stat.smear_e_smear_p_eta = new TH1D("smear_e_smear_p_eta", "smeared e, smeared p;#eta;counts", 100, -5, 5 );
+    // stat.smear_pt_eta        = new TH1D("smear_pt_eta", "smeared pt;#eta;counts", 100, -5, 5 );
 
-    int angleinc = 1;
-    for(int mom=1; mom < 20; mom+=2) {
-        for(int angle_deg=angleinc; angle_deg < 180; angle_deg+=angleinc) {  // theta
+    double angleinc = 0.1;
+    for(double mom=1; mom < 20; mom+=2) {
+        for(double angle_deg=angleinc; angle_deg < 180; angle_deg+=angleinc) {  // theta
             // 4 vector
 	    TLorentzVector input_vect(0, 0, mom, sqrt ( mom*mom + pow(pdg_particle->Mass(),2)) );
 	    input_vect.RotateX(angle_deg*deg_to_rad);
@@ -158,6 +182,10 @@ EicSmearStatistics Process(int pdg, Smear::Detector& detector) {
                     stat.smear_e_smear_p++;
                     stat.smear_e_smear_p_eta->Fill(input_vect.Eta());
                     break;
+                // case smear_pt:
+                //     stat.smear_pt++;
+                //     stat.smear_pt_eta->Fill(input_vect.Eta());
+                //     break;
             }
 
             stat.steps.push_back(step);
@@ -176,19 +204,23 @@ void PrintSmearStats(const EicSmearStatistics& stat) {
     cout << "   zero_e_smear_p  = " << setw(8) << stat.zero_e_smear_p << " (partly smeared)\n";
     cout << "   smear_e_zero_p  = " << setw(8) << stat.smear_e_zero_p << " (partly smeared)\n";
     cout << "   smear_e_smear_p = " << setw(8) << stat.smear_e_smear_p << " (smeared)\n";
+    //cout << "   smear_pt        = " << setw(8) << stat.smear_pt << " (pt smeared)\n";
 }
 
 
 
 int main() {   
-    int pid = 211; // pi+
+  // int pid = 211; // pi+
+    int pid = 11; // e-
     
     TString detstring = "BeAST";
+    // TString detstring = "JLEIC";
     // TString detstring = "ePhenix";
     // TString detstring = "ZEUS";
     
     Smear::Detector detector;
     if ( detstring=="BeAST" ) detector = BuildBeAST();
+    if ( detstring=="JLEIC" ) detector = BuildJLEIC();
     if ( detstring=="ZEUS" ) detector = BuildZeus();
     if ( detstring=="ePhenix" ) detector = BuildEphoenix();
     
@@ -219,12 +251,16 @@ int main() {
     stat.smear_e_zero_p_eta->SetLineColor(kBlack);
     stat.smear_e_zero_p_eta->Draw("same");
         
+    // stat.smear_pt_eta->SetLineColor(kMagenta);
+    // stat.smear_pt_eta->Draw("same");
+
     stat.null_particles_eta->SetLineColor(kRed);
     stat.null_particles_eta->Draw("same");
     
     leg->AddEntry( stat.zero_e_smear_p_eta, "P smeared", "l");
     leg->AddEntry( stat.smear_e_zero_p_eta, "E smeared", "l");
     leg->AddEntry( stat.smear_e_smear_p_eta, "Both smeared", "l");
+    // leg->AddEntry( stat.smear_pt_eta, "pT smeared", "l");
     leg->AddEntry( stat.null_particles_eta, "NONE smeared", "l");
     leg->Draw("same");
 

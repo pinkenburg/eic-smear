@@ -122,6 +122,12 @@ void Device::Smear(const erhic::VirtualParticle &prt, ParticleMCS &out) {
   }
   // if ( smeared < 0 || fabs(mKinematicFunction->GetX(smeared)-smeared)>1e-5 ) cout << mKinematicFunction->GetX(smeared) << " " << smeared << endl;
   SetVariable(out, mKinematicFunction->GetX(smeared), mSmeared);
+  // if ( mSmeared == kPt) {
+  //   std::cout << "unsmeared " << unsmeared << std::endl;
+  //   std::cout << "resolution " << resolution << std::endl;
+  //   std::cout << "smeared " << smeared << std::endl;
+  // }
+
   // Fix angles to the correct ranges.
   if (kTheta == mSmeared) {
     out.theta = FixTheta(out.theta);
