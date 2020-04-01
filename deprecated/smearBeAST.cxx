@@ -13,53 +13,7 @@ Smear::Detector BuildBeAST() {
 
   gSystem->Load("libeicsmear");
 
-  // Create the detector object to hold all devices
-  Smear::Detector det;
-  det.SetEventKinematicsCalculator("NM JB DA"); // The detector will calculate event kinematics from smeared values
-
-  // Tracking
-  // --------
-  // Note: Smear::kCharged checks pdg charge, so includes muons (good)
-
-  // Create our tracking capabilities, by a combination of mometum, theta and phi Devices.
-  // The momentum parametrization (a*p + b) gives sigma_P/P in percent. 
-  // So Multiply through by P and divide by 100 to get absolute sigma_P
-  // Theta and Phi parametrizations give absolute sigma in miliradians
-
-  // Track Momentum
-  // eta = -3.5 -- 3.5
-  // sigma_p/p ~ 0.1% p+2.0%
-  
-  Smear::Device momentum(Smear::kP, "(P*P*(0.0182031 + 0.00921047*pow((-log(tan(theta/2.0))), 2) - 0.00291243*pow((-log(tan(theta/2.0))), 4) + 0.000264353*pow((-log(tan(theta/2.0))), 6)) + P*(0.209681 + 0.275144*pow((-log(tan(theta/2.0))), 2) - 0.0436536*pow((-log(tan(theta/2.0))), 4) + 0.00367412*pow((-log(tan(theta/2.0))), 6)))*0.01");   
-  Smear::Device trackTheta(Smear::kTheta, "((1.0/(1.0*P))*(0.752935 + 0.280370*pow((-log(tan(theta/2.0))), 2) - 0.0359713*pow((-log(tan(theta/2.0))), 4) + 0.00200623*pow((-log(tan(theta/2.0))), 6)) + 0.0282315 - 0.00998623*pow((-log(tan(theta/2.0))), 2) + 0.00117487*pow((-log(tan(theta/2.0))), 4) - 0.0000443918*pow((-log(tan(theta/2.0))), 6))*0.001");
-  Smear::Device trackPhi(Smear::kPhi, "((1.0/(1.0*P))*(0.743977 + 0.753393*pow((-log(tan(theta/2.0))), 2) + 0.0634184*pow((-log(tan(theta/2.0))), 4) + 0.0128001*pow((-log(tan(theta/2.0))), 6)) + 0.0308753 + 0.0480770*pow((-log(tan(theta/2.0))), 2) - 0.0129859*pow((-log(tan(theta/2.0))), 4) + 0.00109374*pow((-log(tan(theta/2.0))), 6))*0.001");
-
-   // Set Up Tracking Zone
-  Smear::Acceptance::Zone TrackZone(ThetaFromEta ( 3.5 ),ThetaFromEta ( -3.5 ));
-  momentum.Accept.SetCharge(Smear::kCharged);
-  trackTheta.Accept.SetCharge(Smear::kCharged);
-  trackPhi.Accept.SetCharge(Smear::kCharged);
-  
-  momentum.Accept.AddZone(TrackZone);
-  trackTheta.Accept.AddZone(TrackZone);
-  trackPhi.Accept.AddZone(TrackZone);
-   
-  det.AddDevice(momentum);
-  det.AddDevice(trackTheta);
-  det.AddDevice(trackPhi);
-
-   // eta = -3.5 --  -2.5
-  // sigma_p/p ~ 0.1% p+2.0%
-  Smear::Acceptance::Zone TrackBack1Zone(ThetaFromEta ( -2.5 ),ThetaFromEta ( -3.5 ));
-  Smear::Device TrackBack1P(Smear::kP, "sqrt( pow ( 0.001*P*P, 2) + pow ( 0.02*P, 2) )");
-  TrackBack1P.Accept.AddZone(TrackBack1Zone);
-  TrackBack1P.Accept.SetCharge(Smear::kCharged);
-
-
-
-
-  
-  // Calorimeter resolution usually given as sigma_E/E = const% + stocastic%/Sqrt{E}
+   // Calorimeter resolution usually given as sigma_E/E = const% + stocastic%/Sqrt{E}
    // EIC Smear needs absolute sigma: sigma_E = Sqrt{const*const*E*E + stoc*stoc*E}
 
    // Create the EM Calorimeter
@@ -82,10 +36,19 @@ Smear::Detector BuildBeAST() {
    Smear::Device hcalTrkBck(Smear::kE, "sqrt(0.015*0.015*E*E + 0.50*0.50*E)");
 
 
-  
+   // Create our tracking capabilities, by a combination of mometum, theta and phi Devices.
+   // The momentum parametrization (a*p + b) gives sigma_P/P in percent. 
+   // So Multiply through by P and divide by 100 to get absolute sigma_P
+   // Theta and Phi parametrizations give absolute sigma in miliradians
+
+   // Track Momentum
+   //Smear::Device momentum(Smear::kP, "(P*P*(0.0182031 + 0.00921047*pow((-log(tan(theta/2.0))), 2) - 0.00291243*pow((-log(tan(theta/2.0))), 4) + 0.000264353*pow((-log(tan(theta/2.0))), 6)) + (0.209681 + 0.275144*pow((-log(tan(theta/2.0))), 2) - 0.0436536*pow((-log(tan(theta/2.0))), 4) + 0.00367412*pow((-log(tan(theta/2.0))), 6)))*0.01");
+   Smear::Device momentum(Smear::kP, "(P*P*(0.0182031 + 0.00921047*pow((-log(tan(theta/2.0))), 2) - 0.00291243*pow((-log(tan(theta/2.0))), 4) + 0.000264353*pow((-log(tan(theta/2.0))), 6)) + P*(0.209681 + 0.275144*pow((-log(tan(theta/2.0))), 2) - 0.0436536*pow((-log(tan(theta/2.0))), 4) + 0.00367412*pow((-log(tan(theta/2.0))), 6)))*0.01");
+   Smear::Device trackTheta(Smear::kTheta, "((1.0/(1.0*P))*(0.752935 + 0.280370*pow((-log(tan(theta/2.0))), 2) - 0.0359713*pow((-log(tan(theta/2.0))), 4) + 0.00200623*pow((-log(tan(theta/2.0))), 6)) + 0.0282315 - 0.00998623*pow((-log(tan(theta/2.0))), 2) + 0.00117487*pow((-log(tan(theta/2.0))), 4) - 0.0000443918*pow((-log(tan(theta/2.0))), 6))*0.001");
+   Smear::Device trackPhi(Smear::kPhi, "((1.0/(1.0*P))*(0.743977 + 0.753393*pow((-log(tan(theta/2.0))), 2) + 0.0634184*pow((-log(tan(theta/2.0))), 4) + 0.0128001*pow((-log(tan(theta/2.0))), 6)) + 0.0308753 + 0.0480770*pow((-log(tan(theta/2.0))), 2) - 0.0129859*pow((-log(tan(theta/2.0))), 4) + 0.00109374*pow((-log(tan(theta/2.0))), 6))*0.001");
+
 
    // Need these to keep the component not smeared 
-
    // Momentum for EM
    Smear::Device momentumEM(Smear::kP, "0");
    Smear::Device trackThetaEM(Smear::kTheta, "0");
@@ -152,6 +115,8 @@ Smear::Detector BuildBeAST() {
    Smear::Acceptance::Zone hTrkBck(3.0812,3.1194,0.,TMath::TwoPi(),0.,TMath::Infinity(),0.,TMath::Infinity(),0.,TMath::Infinity(),-TMath::Infinity(),TMath::Infinity());
    Smear::Acceptance::Zone hTrkFwd(0.0222,0.0604,0.,TMath::TwoPi(),0.,TMath::Infinity(),0.,TMath::Infinity(),0.,TMath::Infinity(),-TMath::Infinity(),TMath::Infinity());
 
+   // Set Up Tracking Zone
+   Smear::Acceptance::Zone trk(0.0604,3.0812,0.,TMath::TwoPi(),0.,TMath::Infinity(),0.,TMath::Infinity(),0.,TMath::Infinity(),-TMath::Infinity(),TMath::Infinity());
 
 
    // Assign acceptance to calorimeters
@@ -190,6 +155,17 @@ Smear::Detector BuildBeAST() {
    hcalTrkFwd.Accept.AddZone(hTrkFwd);
 
    // Assign acceptance to tracker
+   momentum.Accept.SetGenre(Smear::kHadronic);
+   trackTheta.Accept.SetGenre(Smear::kHadronic);
+   trackPhi.Accept.SetGenre(Smear::kHadronic);
+
+   momentum.Accept.SetCharge(Smear::kCharged);
+   trackTheta.Accept.SetCharge(Smear::kCharged);
+   trackPhi.Accept.SetCharge(Smear::kCharged);
+
+   momentum.Accept.AddZone(trk);
+   trackTheta.Accept.AddZone(trk);
+   trackPhi.Accept.AddZone(trk);
 
    // Assign acceptance for calorimeter momentum
    momentumEM.Accept.SetGenre(Smear::kElectromagnetic);
@@ -269,9 +245,9 @@ Smear::Detector BuildBeAST() {
    det.AddDevice(momentum);
    det.AddDevice(trackTheta);
    det.AddDevice(trackPhi);
-   det.AddDevice(momentumEM);
-   det.AddDevice(trackThetaEM);
-   det.AddDevice(trackPhiEM);
+   // det.AddDevice(momentumEM);
+   // det.AddDevice(trackThetaEM);
+   // det.AddDevice(trackPhiEM);
    det.AddDevice(momentumHad);
    det.AddDevice(trackThetaHad);
    det.AddDevice(trackPhiHad);
