@@ -16,21 +16,28 @@ SET(
 add_executable(particlegun particlegun.cxx)
 target_sources(particlegun PRIVATE ${DET_SRC} PUBLIC ${DET_HEAD})
 
+## QA plots
+add_executable(qaplots qaplots.cxx qaplots.hh )
+target_sources(qaplots PRIVATE ${DET_SRC} PUBLIC ${DET_HEAD} )
+
 ## simple tree builder
 add_executable(test_simple_buildtree test_simple_buildtree.cxx)
 
 # Add libraries
 include_directories(${ROOT_INCLUDE_DIR})
 target_link_libraries(particlegun ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG )
+target_link_libraries(qaplots ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG )
 target_link_libraries(test_simple_buildtree ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG )     
 
 if(PYTHIA6_LIBDIR)
   target_link_libraries(particlegun -lEGPythia6 -lEve )
+  target_link_libraries(qaplots -lEGPythia6 -lEve )
   target_link_libraries(test_simple_buildtree -lEGPythia6 -lEve )     
 endif(PYTHIA6_LIBDIR)
 
 # Add libraries
 target_link_libraries(particlegun eicsmear)
+target_link_libraries(qaplots eicsmear)
 target_link_libraries(test_simple_buildtree eicsmear)
 
 # copy input files
