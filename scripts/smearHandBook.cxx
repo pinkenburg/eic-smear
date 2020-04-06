@@ -27,8 +27,9 @@ Smear::Detector BuildHandBookDetector() {
 
   // Create the detector object to hold all devices
   Smear::Detector det;
-  det.SetEventKinematicsCalculator("NM JB DA"); // The detector will calculate event kinematics from smeared values
-
+  // The detector will calculate event kinematics from smeared values
+  det.SetEventKinematicsCalculator("NM JB DA");
+    
   // Tracking
   // --------
   // Note: Smear::kCharged checks pdg charge, so includes muons (good)
@@ -173,9 +174,10 @@ Smear::Detector BuildHandBookDetector() {
   HcalFwd.Accept.SetGenre(Smear::kHadronic);
   det.AddDevice(HcalFwd);
 
-   return det;
+  return det;
 }
 
+// -------------------------------------------------------------------
 double ThetaFromEta( const double eta ) {
   if ( !isnan(eta) && !isinf(eta)   ) {
     return 2.0 * atan( exp( -eta ));
@@ -184,6 +186,7 @@ double ThetaFromEta( const double eta ) {
   return -1;
 }
 
+// -------------------------------------------------------------------
 double EtaFromTheta( const double theta ) {
   // The default value of -19 is used in the main eRHIC code,
   // so use that for consistency.
