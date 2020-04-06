@@ -7,6 +7,7 @@ SET(
   )
 SET(
   DET_SRC  
+  ${PROJECT_SOURCE_DIR}/scripts/smearHandBook.cxx
   ${PROJECT_SOURCE_DIR}/scripts/smearBeAST.cxx
   ${PROJECT_SOURCE_DIR}/scripts/ZEUSDetector.cpp
   ${PROJECT_SOURCE_DIR}/scripts/ePHENIXDetector.cpp
