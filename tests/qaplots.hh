@@ -11,8 +11,7 @@ struct qaparameters{
   std::string txtfilename="./tests/ep_noradcorr.20x250.small.txt";
   TString outfilebase="./qaplots";
   long nevents=-1;
-  std::vector<int> pids = {11 , 211, 2112, 2212}; // sign will be ignored. leave empty for everything. 
-
+  std::vector<int> pids = {}; // sign will be ignored. 0 for all. leave empty for e, pi, k, p. 
   std::string detstring = "BeAST"; // Capitalization does not matter
 };
 

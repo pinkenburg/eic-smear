@@ -29,6 +29,7 @@
 
 #include "ePHENIXDetector.h"
 #include "eicsmear/smear/Detector.h"
+Smear::Detector BuildHandBookDetector();
 Smear::Detector BuildZeus();
 Smear::Detector BuildBeAST();
 
@@ -84,6 +85,7 @@ int main(int argc, char* argv[]){
   // Smear the tree
   // --------------
   Smear::Detector detector;
+  if ( qapars.detstring=="HANDBOOK" ) detector = BuildHandBookDetector();
   if ( qapars.detstring=="BEAST" ) detector = BuildBeAST();
   if ( qapars.detstring=="ZEUS" ) detector = BuildZeus();
   if ( qapars.detstring=="EPHENIX" ) detector = BuildEphoenix();
@@ -127,7 +129,13 @@ int main(int argc, char* argv[]){
   };
 
   map<int,qacollection> qabook;
-  if ( qapars.pids.size() == 0 ) qapars.pids.push_back(0);
+  if ( qapars.pids.size() == 0 ) {
+    qapars.pids.push_back(11); // e
+    qapars.pids.push_back(211); // pi
+    qapars.pids.push_back(321); // K
+    qapars.pids.push_back(2212); // p
+    qapars.pids.push_back(2112); // n
+  }
 
   TString s;
   float pmin = 0;
