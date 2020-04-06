@@ -12,7 +12,6 @@
 #include "eicsmear/smear/Detector.h"
 Smear::Detector BuildZeus();
 Smear::Detector BuildBeAST();
-
 Smear::Detector BuildHandBookDetector();
 
 const double deg_to_rad = 0.01745329251; // pi/180
