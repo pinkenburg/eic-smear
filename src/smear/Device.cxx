@@ -111,10 +111,12 @@ void Device::Smear(const erhic::VirtualParticle &prt, ParticleMCS &out) {
   double resolution = mFormula->Eval(args);
   double smeared = mDistribution.Generate(unsmeared, resolution);
   // mDistribution.Print();
-  // std::cout << "unsmeared " << unsmeared << std::endl;
-  // std::cout << "resolution " << resolution << std::endl;
-  // std::cout << "smeared " << smeared << std::endl;
-  // std::cout << "mSmeared " << mSmeared << std::endl;
+  // if ( abs(prt.Id()==11)){
+  //   std::cout << "unsmeared " << unsmeared << std::endl;
+  //   std::cout << "resolution " << resolution << std::endl;
+  //   std::cout << "smeared " << smeared << std::endl;
+  //   std::cout << "mSmeared " << mSmeared << std::endl;
+  // }
   // mKinematicFunction->Print();
   if ( mKinematicFunction->GetFormula()->GetExpFormula() != "x" ){
     std::cerr << "Formula = " << mKinematicFunction->GetFormula()->GetExpFormula() << std::endl;
