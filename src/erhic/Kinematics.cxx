@@ -403,6 +403,7 @@ Double_t JacquetBlondelComputer::ComputeY() const {
   // return bounded(y, 0., 1.);
   // changed: y_jb can be slightly >1
   // we're returning y as is and circumvent the warnning
+  //std::cout << " JB y = " << y << std::endl;
   return y;
 }
 
@@ -457,6 +458,7 @@ Double_t JacquetBlondelComputer::ComputeX() const {
   // return bounded(x, 0., 1.);
   // changed: x_jb can be slightly >1 when y_jb is very small
   // we're returning x as is and circumvent the warning (but keep warning for x<0)
+  // std::cout << " JB x = " << x << std::endl;
   return bounded(x, 0., 100.);
 }
 
@@ -547,6 +549,8 @@ Double_t DoubleAngleComputer::ComputeY() const {
     }  // if
   }  // if
      // Return y bounded by the range [0, 1].
+
+  // std::cout << " DA y = " << y << std::endl;
   return bounded(y, 0., 1.);
 }
 
@@ -582,6 +586,8 @@ Double_t DoubleAngleComputer::ComputeX() const {
     }  // if
   }  // if
   // Return x bounded by the range [0, 1].
+
+  // std::cout << " DA x = " << x << std::endl;
   return bounded(x, 0., 1.);
 }
 
