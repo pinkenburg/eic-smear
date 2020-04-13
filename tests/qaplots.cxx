@@ -79,8 +79,9 @@ int main(int argc, char* argv[]){
        << qapars.txtfilename << endl
        << " into root file " << endl
        << rootname << endl;
-  
-  BuildTree(qapars.txtfilename.c_str(), outpath.c_str(), qapars.nevents);
+
+  // DEBUG - skip root file generation
+  // BuildTree(qapars.txtfilename.c_str(), outpath.c_str(), qapars.nevents);
 
   // Smear the tree
   // --------------
@@ -142,8 +143,8 @@ int main(int argc, char* argv[]){
   float pmax = 20;
   int pbins = 80;
 
-  float dpmin = -0.1;
-  float dpmax = 0.1;
+  float dpmin = -100;
+  float dpmax = 100;
   int dpbins = 100;
   
   float emin = 0;
@@ -214,7 +215,8 @@ int main(int argc, char* argv[]){
 	auto& pid = pidcoll.first;
 	auto& coll = pidcoll.second;
 	if ( pid==0 || inParticle->GetPdgCode() == pid ){
-	  auto delP = (inParticle->GetP() - inParticleS->GetP()) / inParticle->GetP();
+	  // auto delP = (inParticle->GetP() - inParticleS->GetP()) / inParticle->GetP();
+	  auto delP = (inParticle->GetP() - inParticleS->GetP());
 	  coll.DelP_th->Fill(inParticle->GetTheta(), delP);
 	  
 	  auto delE = (inParticle->GetE() - inParticleS->GetE()) / inParticle->GetE();
