@@ -41,6 +41,7 @@ find_package(ROOT 6.10 REQUIRED)
 # Need hepmc3
 find_package(HepMC3 REQUIRED)
 message ("bla " ${HEPMC3_LIB})
+message ("bla " ${HEPMC3_INCLUDE_DIR})
 
 ##############################################################################################################
 
@@ -59,7 +60,6 @@ add_library(
    src/erhic/EventDpmjet.cxx
    src/erhic/EventFactory.cxx
    src/erhic/EventGmcTrans.cxx
-   src/erhic/EventHepMC.cxx
    src/erhic/EventMC.cxx
    src/erhic/EventMilou.cxx
    src/erhic/EventPepsi.cxx
@@ -90,6 +90,12 @@ add_library(
    src/smear/SmearTree.cxx
    src/smear/Tracker.cxx
 )
+target_sources( eicsmear
+    PRIVATE
+    src/erhic/EventFactoryHepMC.cxx
+    src/erhic/EventHepMC.cxx
+    )
+
 
 # include directories
 target_include_directories(eicsmear
@@ -100,6 +106,10 @@ target_include_directories(eicsmear
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/cint
   ${ROOT_INCLUDE_DIR}
+  )
+
+target_include_directories(eicsmear
+  PRIVATE
   ${HEPMC3_INCLUDE_DIR}
   )
 
@@ -135,6 +145,7 @@ custom_generate_root_dict( erhicDict
   eicsmear/erhic/EventDpmjet.h
   eicsmear/erhic/EventFactory.h
   eicsmear/erhic/EventGmcTrans.h
+  eicsmear/erhic/EventFactoryHepMC.h
   eicsmear/erhic/EventHepMC.h
   eicsmear/erhic/EventMC.h
   eicsmear/erhic/EventMCFilterABC.h
