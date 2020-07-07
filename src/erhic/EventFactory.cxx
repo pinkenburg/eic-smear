@@ -18,6 +18,7 @@
 
 #include "eicsmear/erhic/BeamParticles.h"
 #include "eicsmear/erhic/EventPythia.h"
+#include "eicsmear/erhic/EventHepMC.h"
 #include "eicsmear/erhic/EventMilou.h"
 #include "eicsmear/erhic/EventDjangoh.h"
 #include "eicsmear/erhic/EventDpmjet.h"
@@ -30,6 +31,16 @@
 #include "eicsmear/erhic/Kinematics.h"
 #include "eicsmear/erhic/ParticleIdentifier.h"
 #include "eicsmear/erhic/ParticleMC.h"
+
+#include <TVector3.h>
+#include <TParticlePDG.h>
+#include <TLorentzVector.h>
+#include <TDatabasePDG.h>
+
+#include <HepMC3/ReaderAsciiHepMC2.h>
+#include <HepMC3/GenEvent.h>
+#include <HepMC3/GenVertex.h>
+#include <HepMC3/GenParticle.h>
 
 namespace erhic {
 
@@ -181,6 +192,82 @@ std::string EventFromAsciiFactory<T>::EventName() const {
   return T::Class()->GetName();
 }
 
+template<typename T>
+void EventFromAsciiFactory<T>::FindFirstEvent()  {
+  for (int i=0; i<5; i++)
+  {
+    std::getline(*mInput,mLine);
+  }
+}
+
+
+
+
+EventFromAsciiFactory<erhic::EventHepMC>::EventFromAsciiFactory(std::istream& is):
+ mInput(&is)
+    , mEvent(nullptr) 
+{   
+  adapter2 = new HepMC3::ReaderAsciiHepMC2(is);
+  }
+
+
+std::string EventFromAsciiFactory<erhic::EventHepMC>::EventName() const {
+  return erhic::EventHepMC::Class()->GetName();
+}
+
+  erhic::EventHepMC* EventFromAsciiFactory<erhic::EventHepMC>::Create()
+  {
+    TProcessIdObjectCount objectCount;
+    mEvent.reset(new erhic::EventHepMC());
+    if (!AddParticle()) {
+      mEvent.reset(nullptr);
+    }  // if
+
+    return mEvent.release();
+  }
+
+  bool EventFromAsciiFactory<erhic::EventHepMC>::AddParticle() {
+    try {
+      if (mEvent.get()) {
+        HepMC3::GenEvent evt(HepMC3::Units::GEV,HepMC3::Units::MM);
+	adapter2->read_event(evt);
+	if (adapter2->failed())
+	{
+	  return false;
+	}
+	auto vtxvec = evt.vertices();
+	for (auto v = vtxvec.begin();
+	     v != vtxvec.end();
+	     ++v)
+	{
+
+	  auto particlevec = (*v)->particles_out();
+	  for (auto p = particlevec.begin();
+	       p != particlevec.end(); ++p)
+	  {
+	    TParticlePDG * pdg_p = TDatabasePDG::Instance()->GetParticle( (*p)->pdg_id() );
+	    TVector3 vertex((*v)->position().x(),(*v)->position().y(),(*v)->position().z());
+	    TLorentzVector lovec((*p)->momentum().x(),(*p)->momentum().y(),(*p)->momentum().z(),(*p)->momentum().e());
+	    ParticleMC particle; 
+	    particle.SetVertex(vertex);
+	    particle.Set4Vector(lovec);
+	    particle.SetEvent(mEvent.get());
+	    mEvent->AddLast(&particle);
+	  }
+	}
+	//ParticleMCeA *particle = new ParticleMCeA(mLine);  // Throws if the string is bad
+	//particle->SetEvent(mEvent.get());
+	//mEvent->AddLast(particle);
+	//delete particle;
+      }  // if
+      return true;
+    }  // try
+    catch(std::exception& error) {
+      std::cerr << "Exception building particle: " << error.what() << std::endl;
+      return false;
+    }
+  }
+
 }  // namespace erhic
 
 namespace {
@@ -189,6 +276,7 @@ namespace {
 erhic::EventFromAsciiFactory<erhic::EventDjangoh> ed;
 erhic::EventFromAsciiFactory<erhic::EventDpmjet> ej;
 erhic::EventFromAsciiFactory<erhic::EventPepsi> ee;
+erhic::EventFromAsciiFactory<erhic::EventHepMC> eh;
 erhic::EventFromAsciiFactory<erhic::EventMilou> em;
 erhic::EventFromAsciiFactory<erhic::EventRapgap> er;
 erhic::EventFromAsciiFactory<erhic::EventPythia> ep;

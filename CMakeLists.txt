@@ -38,6 +38,10 @@ set(
 # Need ROOT first to define some macros
 find_package(ROOT 6.10 REQUIRED)
 
+# Need hepmc3
+find_package(HepMC3 REQUIRED)
+message ("bla " ${HEPMC3_LIB})
+
 ##############################################################################################################
 
 # Main target is the libeicsmear library
@@ -55,6 +59,7 @@ add_library(
    src/erhic/EventDpmjet.cxx
    src/erhic/EventFactory.cxx
    src/erhic/EventGmcTrans.cxx
+   src/erhic/EventHepMC.cxx
    src/erhic/EventMC.cxx
    src/erhic/EventMilou.cxx
    src/erhic/EventPepsi.cxx
@@ -95,6 +100,7 @@ target_include_directories(eicsmear
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/cint
   ${ROOT_INCLUDE_DIR}
+  ${HEPMC3_INCLUDE_DIR}
   )
 
 # Require at least c++11. Could require individual features instead too
@@ -129,6 +135,7 @@ custom_generate_root_dict( erhicDict
   eicsmear/erhic/EventDpmjet.h
   eicsmear/erhic/EventFactory.h
   eicsmear/erhic/EventGmcTrans.h
+  eicsmear/erhic/EventHepMC.h
   eicsmear/erhic/EventMC.h
   eicsmear/erhic/EventMCFilterABC.h
   eicsmear/erhic/EventMilou.h
@@ -148,7 +155,7 @@ custom_generate_root_dict( erhicDict
   eicsmear/erhic/VirtualParticle.h
   LINKDEF LinkDef.h
   OPTIONS -rml libeicsmear -rmf libeicsmear.rootmap -s libeicsmear -multiDict
-  INCPATH ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/cint ${ROOT_INCLUDE_DIR}
+  INCPATH ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/cint ${ROOT_INCLUDE_DIR} ${HEPMC3_INCLUDE_DIR}
   )
 
 # Smearing code dictionary.
@@ -225,7 +232,7 @@ endif(PYTHIA6_LIBDIR)
 
 ## Build the library
 ## this can be improved with newer root versions
-target_link_libraries(eicsmear ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG -lEGPythia6 -lEve )
+target_link_libraries(eicsmear ${HEPMC3_LIB} ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG -lEGPythia6 -lEve )
 if(PYTHIA6_LIBDIR)
   target_link_libraries(eicsmear ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG -lEGPythia6 -lEve )
 else (PYTHIA6_LIBDIR)
