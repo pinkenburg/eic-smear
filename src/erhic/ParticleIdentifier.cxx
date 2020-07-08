@@ -97,6 +97,7 @@ bool ParticleIdentifier::IsVirtualPhoton(
   if (pdg>24) return false;
   if ( particle.GetStatus() == 21 ) return true; // pythia6 et al
   if ( particle.GetStatus() == 13 ) return true; // pythia8
+  return false;
 }
 
 // =============================================================================
