@@ -71,6 +71,7 @@ int main(int argc, char* argv[]){
   // First, convert txt file to tree
   // -------------------------------
   BuildTree(qapars.txtfilename.c_str(), qapars.outpath.c_str(), qapars.nevents);
+  return 0;
 
   // Smear the tree
   // --------------
