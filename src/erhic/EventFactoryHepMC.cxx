@@ -232,11 +232,8 @@ template<>
 	  }
 	}
       }  // if
-      // cout << "Trying to finish" << endl;
-      // auto finished = FinishEvent();
-      // FinishEvent();
-      // return finished;
-      return true;
+      auto finished = FinishEvent(); // 0 is success
+      return (finished==0);
     }  // try
     catch(std::exception& error) {
       std::cerr << "Exception building particle: " << error.what() << std::endl;
