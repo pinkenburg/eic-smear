@@ -38,10 +38,8 @@ set(
 # Need ROOT first to define some macros
 find_package(ROOT 6.10 REQUIRED)
 
-# Need hepmc3
-find_package(HepMC3 REQUIRED)
-message ("bla " ${HEPMC3_LIB})
-message ("bla " ${HEPMC3_INCLUDE_DIR})
+# Is HepMC available?
+find_package(HepMC3)
 
 ##############################################################################################################
 
@@ -60,6 +58,7 @@ add_library(
    src/erhic/EventDpmjet.cxx
    src/erhic/EventFactory.cxx
    src/erhic/EventGmcTrans.cxx
+   src/erhic/EventHepMC.cxx
    src/erhic/EventMC.cxx
    src/erhic/EventMilou.cxx
    src/erhic/EventPepsi.cxx
@@ -89,12 +88,7 @@ add_library(
    src/smear/Smear.cxx
    src/smear/SmearTree.cxx
    src/smear/Tracker.cxx
-)
-target_sources( eicsmear
-    PRIVATE
-    src/erhic/EventFactoryHepMC.cxx
-    src/erhic/EventHepMC.cxx
-    )
+   )
 
 
 # include directories
@@ -108,16 +102,25 @@ target_include_directories(eicsmear
   ${ROOT_INCLUDE_DIR}
   )
 
-target_include_directories(eicsmear
-  PRIVATE
-  ${HEPMC3_INCLUDE_DIR}
-  )
 
 # Require at least c++11. Could require individual features instead too
 target_compile_features(eicsmear PUBLIC cxx_std_11)
 
 # Can add addtional options here
 target_compile_options(eicsmear PRIVATE -Wall -g)
+
+# Optional sources if HepMC3 is installed
+if(HepMC3_FOUND)
+  message ( "-- HepMC3 library found at ${HEPMC3_LIB} --> Adding HepMC sources and headers" )
+  target_sources( eicsmear
+    PRIVATE
+    src/erhic/EventFactoryHepMC.cxx
+    )
+  target_include_directories(eicsmear
+    PRIVATE
+    ${HEPMC3_INCLUDE_DIR}
+    )
+endif()
 
 ##############################################################################################################
 # Generate various CINT dictionaries.
@@ -134,8 +137,11 @@ target_compile_options(eicsmear PRIVATE -Wall -g)
 # so we're passing them by hand
 include( custom_generate_root_dict )
 
+
 # Main eRHIC dictionary.
-custom_generate_root_dict( erhicDict
+# To make hepmc sources optional, build up arguments
+set(
+  ERHIC_HEADERS
   eicsmear/functions.h
   eicsmear/erhic/BeamParticles.h
   eicsmear/erhic/DisKinematics.h
@@ -145,8 +151,6 @@ custom_generate_root_dict( erhicDict
   eicsmear/erhic/EventDpmjet.h
   eicsmear/erhic/EventFactory.h
   eicsmear/erhic/EventGmcTrans.h
-  eicsmear/erhic/EventFactoryHepMC.h
-  eicsmear/erhic/EventHepMC.h
   eicsmear/erhic/EventMC.h
   eicsmear/erhic/EventMCFilterABC.h
   eicsmear/erhic/EventMilou.h
@@ -155,6 +159,7 @@ custom_generate_root_dict( erhicDict
   eicsmear/erhic/EventRapgap.h
   eicsmear/erhic/EventSimple.h
   eicsmear/erhic/EventSartre.h
+  eicsmear/erhic/EventHepMC.h
   eicsmear/erhic/File.h
   eicsmear/erhic/Forester.h
   eicsmear/erhic/Kinematics.h
@@ -164,9 +169,29 @@ custom_generate_root_dict( erhicDict
   eicsmear/erhic/Pid.h
   eicsmear/erhic/VirtualEvent.h
   eicsmear/erhic/VirtualParticle.h
+  )
+set( ERHIC_INCPATHS
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/cint
+  ${ROOT_INCLUDE_DIR}
+  )
+
+if(HepMC3_FOUND)
+  list( APPEND
+    ERHIC_HEADERS
+    eicsmear/erhic/EventFactoryHepMC.h
+    )
+  list( APPEND
+    ERHIC_INCPATHS 
+    ${HEPMC3_INCLUDE_DIR}
+    )
+endif()
+   
+custom_generate_root_dict( erhicDict
+  ${ERHIC_HEADERS}
   LINKDEF LinkDef.h
   OPTIONS -rml libeicsmear -rmf libeicsmear.rootmap -s libeicsmear -multiDict
-  INCPATH ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/cint ${ROOT_INCLUDE_DIR} ${HEPMC3_INCLUDE_DIR}
+  INCPATH ${ERHIC_INCPATHS}
   )
 
 # Smearing code dictionary.
@@ -198,7 +223,7 @@ custom_generate_root_dict( smearDict
 ## This comprises PYTHIA-related stuff in the main eRHIC directory,
 ## plus the hadronic code.
 if(PYTHIA6_LIBDIR)
-  message ( "PYTHIA6_LIBDIR specified --> Adding PYTHIA sources and headers" )
+  message ( "-- PYTHIA6_LIBDIR specified --> Adding PYTHIA sources and headers" )
 
   # Create the pythia dictionary.
   custom_generate_root_dict( pythiaDict
@@ -243,12 +268,17 @@ endif(PYTHIA6_LIBDIR)
 
 ## Build the library
 ## this can be improved with newer root versions
-target_link_libraries(eicsmear ${HEPMC3_LIB} ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG -lEGPythia6 -lEve )
+
+target_link_libraries(eicsmear ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG -lEGPythia6 -lEve )
 if(PYTHIA6_LIBDIR)
   target_link_libraries(eicsmear ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG -lEGPythia6 -lEve )
 else (PYTHIA6_LIBDIR)
   target_link_libraries(eicsmear ${ROOT_LIBRARIES} -L${ROOT_LIBRARY_DIR} -lEG )
 endif(PYTHIA6_LIBDIR)
+
+if(HepMC3_FOUND)
+  target_link_libraries(eicsmear ${HEPMC3_LIB} )
+endif()
 
 ##############################################################################################################
 
