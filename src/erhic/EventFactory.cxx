@@ -129,6 +129,7 @@ namespace erhic {
 
   template<typename T>
   Int_t EventFromAsciiFactory<T>::FinishEvent() {
+    cout << "finishing" << endl;
     std::unique_ptr<DisKinematics> nm(
 				      LeptonKinematicsComputer(*mEvent).Calculate());
     std::unique_ptr<DisKinematics> jb(

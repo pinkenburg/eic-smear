@@ -230,9 +230,11 @@ namespace erhic {
 	    }
 	  }
 	}
-	
       }  // if
-      // ComputeDerivedQuantities();
+      // cout << "Trying to finish" << endl;
+      auto finished = FinishEvent();
+      // FinishEvent();
+      // return finished;
       return true;
     }  // try
     catch(std::exception& error) {
