@@ -65,30 +65,29 @@ namespace erhic {
     int count;
   };
 
-  EventFromAsciiFactory<erhic::EventHepMC>::EventFromAsciiFactory(std::istream& is):
-    mInput(&is),
-    mEvent(nullptr) 
-  {
-    adapter2 = std::make_shared<HepMC3::ReaderAsciiHepMC2>(is);
+  template<> 
+  bool EventFromAsciiFactory<erhic::EventHepMC>::AtEndOfEvent() const {return false;}
+
+  template<>
+  void EventFromAsciiFactory<erhic::EventHepMC>::FindFirstEvent()  {
+    // for (int i=0; i<5; i++)
+    //   {
+    // 	std::getline(*mInput,mLine);
+    //   }
   }
 
-  std::string EventFromAsciiFactory<erhic::EventHepMC>::EventName() const {
-    return erhic::EventHepMC::Class()->GetName();
-  }
-
-  erhic::EventHepMC* EventFromAsciiFactory<erhic::EventHepMC>::Create()
-  {
-    TProcessIdObjectCount objectCount;
-    mEvent.reset(new erhic::EventHepMC());
-    if (!AddParticle()) {
-      mEvent.reset(nullptr);
-    }  // if
-    
-    return mEvent.release();
-  }
-
+  
+template<> 
   bool EventFromAsciiFactory<erhic::EventHepMC>::AddParticle() {
     try {
+      // cout << "hello AddParticle" << endl;
+      // char buf[1000000];
+      // *mInput >> buf;
+      // cout << buf << endl;
+      // throw(-1);
+	
+      // std::shared_ptr<HepMC3::ReaderAsciiHepMC2> adapter2 = std::make_shared<HepMC3::ReaderAsciiHepMC2>(mInput);
+      HepMC3::ReaderAsciiHepMC2 *adapter2 = new HepMC3::ReaderAsciiHepMC2(*mInput);
       if (mEvent.get()) {
         HepMC3::GenEvent evt(HepMC3::Units::GEV,HepMC3::Units::MM);
 	adapter2->read_event(evt);
@@ -98,9 +97,11 @@ namespace erhic {
 	// std::cout << evt.cross_section()->get_accepted_events() << std::endl;
 	// std::cout << evt.cross_section()->xsec() << std::endl;
 
+	int particleindex;
 	particleindex = 1;
 	// Can't use GenParticle::children() because they don't have indices assigned yet
 	// map each HepMC particle onto its corresponding particleindex
+	std::map < HepMC3::GenParticlePtr, int > hepmcp_index;
 	hepmcp_index.clear();
 
 	// start with the beam plus gamma* and scattered lepton
@@ -170,10 +171,10 @@ namespace erhic {
 	// While we don't _have_ to use that class, it makes sense to follow the convention
 	// and not reinvent the wheel
 
-	HandleHepmcParticle( lepton );
-	HandleHepmcParticle( hadron );
-	HandleHepmcParticle( photon );
-	HandleHepmcParticle( scatteredlepton );
+	HandleHepmcParticle( lepton, hepmcp_index, particleindex, mEvent );
+	HandleHepmcParticle( hadron, hepmcp_index, particleindex, mEvent );
+	HandleHepmcParticle( photon, hepmcp_index, particleindex, mEvent );
+	HandleHepmcParticle( scatteredlepton, hepmcp_index, particleindex, mEvent );
 
 	// Now go over all vertices and handle the rest.
 	// Note that by default this could double-count what we just did
@@ -181,7 +182,7 @@ namespace erhic {
 	// (inside HandleHepmcParticle) to avoid this.	
 	for (auto& v : evt.vertices() ){	  
 	  for (auto& p : v->particles_out() ) {	    
-	    HandleHepmcParticle( p );
+	    HandleHepmcParticle( p, hepmcp_index, particleindex, mEvent );
 	  }
 	}
 
@@ -232,7 +233,7 @@ namespace erhic {
 	}
       }  // if
       // cout << "Trying to finish" << endl;
-      auto finished = FinishEvent();
+      // auto finished = FinishEvent();
       // FinishEvent();
       // return finished;
       return true;
@@ -243,7 +244,21 @@ namespace erhic {
     }
   }
 
-  void EventFromAsciiFactory<erhic::EventHepMC>::HandleHepmcParticle( const HepMC3::GenParticlePtr& p ){
+
+template<> 
+erhic::EventHepMC* EventFromAsciiFactory<erhic::EventHepMC>::Create()
+  {
+    TProcessIdObjectCount objectCount;
+    mEvent.reset(new erhic::EventHepMC());
+    if (!AddParticle()) {
+      mEvent.reset(nullptr);
+    }  // if
+    
+    return mEvent.release();
+  }
+
+  
+  void HandleHepmcParticle( const HepMC3::GenParticlePtr& p, std::map < HepMC3::GenParticlePtr, int >& hepmcp_index, int& particleindex, std::unique_ptr<erhic::EventHepMC>& mEvent ){
     // do nothing if we already used this particle
     auto it = hepmcp_index.find(p);
     if ( it != hepmcp_index.end() ) return;

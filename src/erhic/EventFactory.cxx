@@ -213,6 +213,7 @@ namespace {
   erhic::EventFromAsciiFactory<erhic::EventDpmjet> ej;
   erhic::EventFromAsciiFactory<erhic::EventPepsi> ee;
   erhic::EventFromAsciiFactory<erhic::EventMilou> em;
+  erhic::EventFromAsciiFactory<erhic::EventHepMC> eh;
   erhic::EventFromAsciiFactory<erhic::EventRapgap> er;
   erhic::EventFromAsciiFactory<erhic::EventPythia> ep;
   erhic::EventFromAsciiFactory<erhic::EventGmcTrans> eg;
