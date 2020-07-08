@@ -39,7 +39,7 @@ set(
 find_package(ROOT 6.10 REQUIRED)
 
 # Is HepMC available?
-find_package(HepMC3)
+find_package(HepMC3 QUIET)
 
 ##############################################################################################################
 
