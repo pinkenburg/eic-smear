@@ -19,12 +19,6 @@ namespace HepMC3
 
 namespace erhic {
 
-
-#include <HepMC3/ReaderAsciiHepMC2.h>
-#include <HepMC3/GenEvent.h>
-#include <HepMC3/GenVertex.h>
-#include <HepMC3/GenParticle.h>
-
 template<>
 class EventFromAsciiFactory<erhic::EventHepMC> : public VirtualEventFactory {
  public:
