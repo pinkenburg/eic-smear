@@ -78,7 +78,7 @@ class EventFromAsciiFactory<erhic::EventHepMC> : public VirtualEventFactory {
  private:
   int particleindex;
   std::map < HepMC3::GenParticlePtr, int > hepmcp_index;
-  void HandleHepmcParticle( const HepMC3::GenParticlePtr& p, const HepMC3::GenVertexPtr& v);
+  void HandleHepmcParticle( const HepMC3::GenParticlePtr& p);
       
 
   // Warning: explicitly putting the erhic:: namespace before the class

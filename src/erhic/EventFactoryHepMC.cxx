@@ -37,12 +37,15 @@
 #include <TLorentzVector.h>
 #include <TDatabasePDG.h>
 
-#include<map>
+#include <map>
+#include <vector>
+#include <algorithm> // for *min_element, *max_element
 
 using std::cout;
 using std::cerr;
 using std::endl;
 using std::map;
+using std::vector;
 
 namespace erhic {
   
@@ -101,6 +104,64 @@ namespace erhic {
 	hepmcp_index.clear();
 
 	// start with the beam plus gamma* and scattered lepton
+	// Boring determination of the order:
+	auto beams = evt.beams();
+	assert ( beams.size() == 2 );
+	auto hadron = beams.at(0); // or nucleon
+	auto lepton = beams.at(1);
+	// Find the lepton
+	auto pdgl = TDatabasePDG::Instance()->GetParticle( lepton->pdg_id() );
+	auto pdgh = TDatabasePDG::Instance()->GetParticle( hadron->pdg_id() );
+	// Sigh. TParticlePDG uses C strings for particle type. I refuse to use strcmp
+	bool b0islepton = (string(pdgl->ParticleClass()) == "Lepton");
+	bool b1islepton = (string(pdgh->ParticleClass()) == "Lepton");
+	if ( b0islepton == b1islepton ){
+	  // exactly one of them should be a lepton.
+	  throw std::runtime_error ("Exactly one beam should be a lepton - please contact the authors for ff or hh beams"); 
+	}
+	if ( !b0islepton ) {
+	  std::swap (lepton, hadron);
+	}
+	// careful, don't try to use pdg[lh], b[01]islepton from here on out;
+	// they don't get swapped along
+
+	// now find the scattered e and the gamma
+	// some processes (ff2ff) don't have a gamma in the event record
+	HepMC3::GenParticlePtr scatteredlepton;
+	HepMC3::GenParticlePtr photon;
+	switch ( lepton->children().size() ){
+	case 1: {
+	    scatteredlepton = lepton->children().at(0);
+	    auto photonmom = lepton->momentum() - scatteredlepton->momentum();
+	    // Note that the m^2 = Q^2 seems low -- check
+	    // 13 : incoming beam-inside-beam (e.g. gamma inside e) <-- not sure how correct for ff2ff, but we'll use it
+	    photon = std::make_shared<HepMC3::GenParticle>( photonmom, 22, 13 );
+	    photon->set_momentum(photonmom);
+	    photon->set_pid( 22 );
+	    // And add to the vertex (meaning the photon now has the lepton as a mother)
+	    scatteredlepton->production_vertex()->add_particle_out(photon);
+	    
+	    break;
+	}
+	case 2:
+	  scatteredlepton = lepton->children().at(0);
+	  photon = lepton->children().at(1);
+	  if ( scatteredlepton->pid() != 22 && photon->pid() != 22 ){
+	    cerr << "lepton child 1 pid = " << scatteredlepton->pid() << endl;
+	    cerr << "lepton child 2 pid = " << photon->pid() << endl;
+	    throw std::runtime_error ("Found two lepton daughters, none or both of them a photon.");
+	  }
+	  if ( photon->pid() != 22 ){
+	    std::swap ( photon, scatteredlepton );
+	  }
+	  break;
+	default:
+	  cerr << "electron has " << lepton->children().size() << " daughters." << endl;
+	  throw std::runtime_error ("Wrong number of lepton daughters (should be 1 or 2).");
+	  break;
+	}
+	
+	// Now add all four in the right order
 	// ParticleIdentifier expects
 	//   beams.SetBeamLepton(particles.at(0)->Get4Vector());
 	//   beams.SetBeamHadron(particles.at(1)->Get4Vector());
@@ -108,80 +169,70 @@ namespace erhic {
 	//   beams.SetScatteredLepton(particles.at(3)->Get4Vector());
 	// While we don't _have_ to use that class, it makes sense to follow the convention
 	// and not reinvent the wheel
-	// for (auto& p : evt.beams() ) {
-	//   cout << p->pid() << endl;
-	// }
 
+	HandleHepmcParticle( lepton );
+	HandleHepmcParticle( hadron );
+	HandleHepmcParticle( photon );
+	HandleHepmcParticle( scatteredlepton );
 
-
-
-	// cout << " ===== "  << endl;
-	// for (auto& p : evt.vertices().at(0)->particles_out() ) {
-	//   cout << p->pid() << endl;
-	// }
-	// cout << " - "  << endl;
-	// for (auto& p : evt.vertices().at(1)->particles_out() ) {
-	//   cout << p->pid() << endl;
-	// }
-	// cout << " - "  << endl;
-	// for (auto& p : evt.vertices().at(2)->particles_out() ) {
-	//   cout << p->pid() << endl;
-	// }
-	// cout << " - "  << endl;
-	// for (auto& p : evt.vertices().at(3)->particles_out() ) {
-	//   cout << p->pid() << endl;
-	// }
-	// cout << " - "  << endl;
-	// for (auto& p : evt.vertices().at(4)->particles_out() ) {
-	//   cout << p->pid() << endl;
-	// }
-	// cout << " - "  << endl;
-	// for (auto& p : evt.vertices().at(5)->particles_out() ) {
-	//   cout << p->pid() << endl;
-	// }
-	// cout << " =============== "  << endl;
-
-	
+	// Now go over all vertices and handle the rest.
+	// Note that by default this could double-count what we just did
+	// Instead of trying to find out which vertex to skip, just use the lookup table
+	// (inside HandleHepmcParticle) to avoid this.	
 	for (auto& v : evt.vertices() ){	  
 	  for (auto& p : v->particles_out() ) {	    
-	    HandleHepmcParticle( p, v );
-	    // std::cout << particle.GetIndex()<<std::endl;
+	    HandleHepmcParticle( p );
 	  }
 	}
 
-	for (auto& v : evt.vertices() ){	  
+	// Now the map has built up full 1-1 correspondence between all hepmc particles
+	// and the ParticleMC index.
+	// So we can loop over the particles again, find their parents and offspring, and map accordingly.
+	// We explicitly take advantage of particleid = Event entry # +1
+	// If that changes, we'll need to maintain a second map
+	// Note: the beam proton appears twice; that's consistent with the behavior of pythia6
+	for (auto& v : evt.vertices() ){
 	  for (auto& p : v->particles_out() ) {
+	    // corresponding ParticleMC is at
+	    int treeindex = hepmcp_index[p]-1;
+	    assert ( treeindex >=0 ); // Not sure if that can happen. If it does, we could probably just continue;
+	    auto track = mEvent->GetTrack(treeindex);
+
+	    // collect all parents
+	    vector<int> allparents;
 	    for (auto& parent : p->parents() ) {
+	      allparents.push_back( hepmcp_index[parent] );
+	    }	    
+	    // orig and orig1 aren't very intuitively named...
+	    // For pythia6, orig is the default, and orig1 seems purely a placeholder
+	    // trying to mimick that here.
+	    if ( allparents.size() == 1){
+	      track->SetParentIndex( allparents.at(0) ); 
+	    }
+	    if ( allparents.size() >= 2){
+	      // smallest and highest are stored
+	      track->SetParentIndex( *min_element(allparents.begin(), allparents.end() ) );
+	      track->SetParent1Index( *max_element(allparents.begin(), allparents.end() ) );
+	    }
 	      
-	      if ( hepmcp_index[parent] == 0 ){
-		// cerr << hepmcp_index[p] << "  " << parent->pid() << "  " << hepmcp_index[parent] << endl;
-	      }
-	      // explicitly assumes that particleid = Event entry # +1
-	      // cout << hepmcp_index[parent] -1 << endl;
-	      // cout << "  " << parent->pid() << endl;
-	      // cout << "  " << hepmcp_index[parent] << endl;
+	    // same for children
+	    vector<int> allchildren;
+	    for (auto& child : p->children() ) {
+	      allchildren.push_back( hepmcp_index[child] );
+	    }	    
+	    if ( allchildren.size() == 1){
+	      track->SetChild1Index( allchildren.at(0) );
+	    }
+	    if ( allchildren.size() >= 2){
+	      // smallest and highest are stored
+	      track->SetChild1Index( *min_element(allchildren.begin(), allchildren.end() ) );
+	      track->SetChildNIndex( *max_element(allchildren.begin(), allchildren.end() ) );
 	    }
 	  }
 	}
-	// for ( auto& hepmcp : hepmcps ){
-	//   cout << hepmcp->parents().size() << endl;
-	// }
-	// for ( auto& pmc_gp : PMC_HepMCGP_lookup ){
-	//   auto& pmc = pmc_gp.first;
-	//   auto& gp = pmc_gp.second;
-	//   std::cout << "PMC index: " << pmc->GetIndex() << std::endl;
-	//   std::cout << "gp " << gp << std::endl;
-	//   // std::cout << "Parent size: " << gp->parents().size() << std::endl;
-	//   // std::cout << "Children size: " << gp->children().size() << std::endl;
-	// }
-
-
-
-	//ParticleMCeA *particle = new ParticleMCeA(mLine);  // Throws if the string is bad
-	//particle->SetEvent(mEvent.get());
-	//mEvent->AddLast(particle);
-	//delete particle;
+	
       }  // if
+      // ComputeDerivedQuantities();
       return true;
     }  // try
     catch(std::exception& error) {
@@ -190,9 +241,14 @@ namespace erhic {
     }
   }
 
-  void EventFromAsciiFactory<erhic::EventHepMC>::HandleHepmcParticle( const HepMC3::GenParticlePtr& p, const HepMC3::GenVertexPtr& v){
+  void EventFromAsciiFactory<erhic::EventHepMC>::HandleHepmcParticle( const HepMC3::GenParticlePtr& p ){
+    // do nothing if we already used this particle
+    auto it = hepmcp_index.find(p);
+    if ( it != hepmcp_index.end() ) return;
+
+    // Create the particle
     ParticleMC particle;
-    
+    auto v = p->production_vertex();
     TVector3 vertex(v->position().x(),v->position().y(),v->position().z());
     particle.SetVertex(vertex);
     // takes care of  xv, yv, zv;
